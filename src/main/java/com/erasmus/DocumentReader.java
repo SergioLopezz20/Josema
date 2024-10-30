@@ -1,10 +1,9 @@
 package com.erasmus;
 
-import org.apache.poi.xwpf.usermodel.XWPFDocument;
-import org.apache.poi.xwpf.usermodel.XWPFTable;
-import org.apache.poi.xwpf.usermodel.XWPFTableRow;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.text.PDFTextStripper;
 
-import java.io.FileInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -14,18 +13,20 @@ public class DocumentReader {
     public List<University> readDocument(String filePath) {
         List<University> universities = new ArrayList<>();
 
-        try (FileInputStream fis = new FileInputStream(filePath);
-             XWPFDocument document = new XWPFDocument(fis)) {
+        try (PDDocument document = PDDocument.load(new File(filePath))) {
+            PDFTextStripper pdfStripper = new PDFTextStripper();
+            String text = pdfStripper.getText(document);
 
-            XWPFTable table = document.getTables().get(0);
+            String[] lines = text.split("\n");
+            for (int i = 1; i < lines.length; i++) {
+                String[] cells = lines[i].split("\\|");
+                if (cells.length < 5) continue;
 
-            for (int i = 1; i < table.getRows().size(); i++) {
-                XWPFTableRow row = table.getRow(i);
-                String country = row.getCell(0).getText();
-                String universityName = row.getCell(1).getText();
-                String destinationSubject = row.getCell(2).getText();
-                String etsisiSubject = row.getCell(3).getText();
-                String procede = row.getCell(4).getText();
+                String country = cells[0].trim();
+                String universityName = cells[1].trim();
+                String destinationSubject = cells[2].trim();
+                String etsisiSubject = cells[3].trim();
+                String procede = cells[4].trim();
 
                 University university = findOrCreateUniversity(universities, universityName, country);
                 university.addSubject(new Subject(destinationSubject, etsisiSubject, procede));
